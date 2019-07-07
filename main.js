@@ -1,43 +1,68 @@
 var http = require('http');
 var fs = require('fs');
-var url=require('url');
+var url = require('url');
 
-var app = http.createServer(function(request,response){
-    var _url = request.url;
-    var queryData=require('url').parse(_url, true).query;
-    var title=queryData.id;
-    if(_url == '/'){
-      title='Welcome';
-    }
-    if(_url == '/favicon.ico'){
-      return response.writeHead(404);
-    }
-    response.writeHead(200);
-    //정보를 dynamic 하게 변경
-    var template=`
-    <!doctype html>
-<html>
-<head>
-  <title>WEB1 - ${title}</title>
-  <meta charset="utf-8">
-</head>
-<body>
-  <h1><a href="/">WEB</a></h1>
-  <ol>
-    <li><a href="/?id=HTML">HTML</a></li>
-    <li><a href="/?id=CSS">CSS</a></li>
-    <li><a href="/?id=JavaScript">JavaScript</a></li>
-  </ol>
-  <h2>${title}</h2>
-  <p>
-    Cascading Style Sheets (CSS) is a style sheet language used for describing the presentation of a document written in a markup language. Although most often used to set the visual style of web pages and user interfaces written in HTML and XHTML, the language can be applied to any XML document, including plain XML, SVG and XUL, and is applicable to rendering in speech, or on other media. Along with HTML and JavaScript, CSS is a cornerstone technology used by most websites to create visually engaging webpages, user interfaces for web applications, and user interfaces for many mobile applications.
-  </p>
-</body>
-</html>
+/* 본문을 위한 template 생성 */
+function templateHTML(title, list, body){ 
+  return `<!doctype html>
+  <html>
+  <head>
+    <title>WEB1 - ${title}</title>
+    <meta charset="utf-8">
+  </head>
+  <body>
+    <h1><a href="/">WEB</a></h1>
+    ${list}
+    ${body}
+  </body>
+  </html>`;
+}
+/* 파일의 목록을 보여주는 func */
+function templateList(filelist){
+  var list='<ul>';
+  var i=0;
+  while(i < filelist.length){
+    list+=`<li><a href="/?id=${filelist[i]}">${filelist[i]}</a></li>`;
+    i+=1;
+  }
+  list+='</ul>';
+  return list;
+}
 
-    `
-    response.end(template);
- 
+var app = http.createServer(function (request, response) {
+  var _url = request.url;
+  var queryData = require('url').parse(_url, true).query;
+  var pathname=require('url').parse(_url, true).pathname;
+
+  if(pathname==='/'){//path name은 다 /
+    if(queryData.id===undefined){
+      fs.readdir('./data', function(error, filelist){
+        var title='welcome';
+        var description='Hello, Node.js';
+        var list=templateList(filelist);
+        var template=templateHTML(title, list, `<h2>${title}</h2>${description}`);
+        response.writeHead(200);//성공적으로 전송한 경우는 200
+        response.end(template);
+      })
+    }
+    else{
+      fs.readdir('./data', function(error, filelist){
+        fs.readFile(`data/${queryData.id}`, 'utf8', function(err, description){
+          var title=queryData.id;
+          var list =templateList(filelist);
+          var template=templateHTML(title, list, `<h2>${title}</h2>${description}`);
+          response.writeHead(200);
+          response.end(template);
+        })
+      })
+    }
+  //파일을 읽어서 내용을 적용
+  //정보를 dynamic 하게 변경
+  }else{
+    response.writeHead(404);
+    response.end('not FOund');
+  }
+
 });
 app.listen(3000);//3000번 포트 접속
 /*

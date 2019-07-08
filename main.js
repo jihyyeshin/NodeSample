@@ -3,7 +3,7 @@ var fs = require('fs');
 var url = require('url');
 var qs = require('querystring');
 /* 본문을 위한 template 생성 */
-function templateHTML(title, list, body) {
+function templateHTML(title, list, body, control) {
   return `<!doctype html>
   <html>
   <head>
@@ -13,7 +13,7 @@ function templateHTML(title, list, body) {
   <body>
     <h1><a href="/">WEB</a></h1>
     ${list}
-    <a href="/create">create</a>
+    ${control}
     ${body}
   </body>
   </html>`;
@@ -41,7 +41,9 @@ var app = http.createServer(function (request, response) {//요청할 때, 응�
         var title = 'welcome';
         var description = 'Hello, Node.js';
         var list = templateList(filelist);
-        var template = templateHTML(title, list, `<h2>${title}</h2>${description}`);
+        var template = templateHTML(title, list
+          , `<h2>${title}</h2>${description}`
+          , `<a href="/create">create</a>`);
         response.writeHead(200);//성공적으로 전송한 경우는 200
         response.end(template);
       })
@@ -51,7 +53,9 @@ var app = http.createServer(function (request, response) {//요청할 때, 응�
         fs.readFile(`data/${queryData.id}`, 'utf8', function (err, description) {
           var title = queryData.id;
           var list = templateList(filelist);
-          var template = templateHTML(title, list, `<h2>${title}</h2>${description}`);
+          var template = templateHTML(title, list
+            , `<h2>${title}</h2>${description}`
+            , `<a href="/create">create</a><a href="/update?id=${title}">update</a>`);
           response.writeHead(200);
           response.end(template);
         })
@@ -64,7 +68,7 @@ var app = http.createServer(function (request, response) {//요청할 때, 응�
       var title = 'WEB - create';
       var list = templateList(filelist);
       var template = templateHTML(title, list, `
-      <form action="http://localhost:3000/create_process" method="post">
+      <form action="/create_process" method="post">
       <p><input type="text" name="title" placeholder="title"></p>
       <p>
           <textarea name="description" placeholder="description"></textarea>
@@ -73,7 +77,7 @@ var app = http.createServer(function (request, response) {//요청할 때, 응�
           <input type="submit">
       </p>
       </form>
-      `);
+      `, '');
       response.writeHead(200);//성공적으로 전송한 경우는 200
       response.end(template);
     })
@@ -95,7 +99,51 @@ var app = http.createServer(function (request, response) {//요청할 때, 응�
       })
       //console.log(post);
     });//더이상 들어올 정보가 없으면 이 callback함수를 호출한다. 정보 수신 끝 !
-  } else {
+  } else if(pathname==='/update'){
+    fs.readdir('./data', function (error, filelist) {
+      fs.readFile(`data/${queryData.id}`, 'utf8', function (err, description) {
+        var title = queryData.id;
+        var list = templateList(filelist);
+        var template = templateHTML(title, list
+          , `
+          <form action="/update_process" method="post">
+          <input type="hidden" name="id" value="${title}"> 
+          <p><input type="text" name="title" placeholder="title" value="${title}"></p>
+          <p>
+              <textarea name="description" placeholder="description">${description}</textarea>
+          </p>
+          <p>
+              <input type="submit">
+          </p>
+          </form>
+          `
+          , `<a href="/create">create</a><a href="/update?id=${title}">update</a>`);
+        response.writeHead(200);
+        response.end(template);
+      })
+    })
+  }else if(pathname==='/update_process'){
+    var body = '';
+    request.on('data', function (data) {
+      body += data;//data를 매번 추가해준다.
+    });//post방식으로 전송할 때 데이터가 많으면 컴퓨터에 무리가 갈 수 있음, nodejs에서는 데이터가 많은 경우에 이와 같은 방법을 사용한다
+    //데이터를 수신할 때 마다 callback함수를 호출하기로 약속. data라는 매개변수로 그 정보를 받아옴
+    request.on('end', function () {
+      var post = qs.parse(body);//데이터를 객체화하여 가져온다. 지금까지의 body가 저장되어있을 것이다.
+      var title = post.title;
+      var description = post.description;
+      var id=post.id;
+      //변경
+      fs.rename(`data/${id}`, `data/${title}`, function(err){
+        fs.writeFile(`data/${title}`, description, 'utf8', function (err) {
+          //파일 저장이 끝났다 !
+          response.writeHead(302, {Location:`/?id=${title}`});//리다이렉션
+          response.end('success');
+        })
+      });
+
+    });//더이상 들어올 정보가 없으면 이 callback함수를 호출한다. 정보 수신 끝 !
+  }else {
     response.writeHead(404);
     response.end('not FOund');
   }

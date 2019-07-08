@@ -55,7 +55,14 @@ var app = http.createServer(function (request, response) {//요청할 때, 응�
           var list = templateList(filelist);
           var template = templateHTML(title, list
             , `<h2>${title}</h2>${description}`
-            , `<a href="/create">create</a><a href="/update?id=${title}">update</a>`);
+            , `<a href="/create">create</a>
+              <a href="/update?id=${title}">update</a>
+              <form action="/delete_process" method="post">
+                <input type="hidden" name="id" value="${title}">
+                <input type="submit" value="delete">
+              </form>
+              `
+          );//delete 는 링크로 구현하면 안된다. 
           response.writeHead(200);
           response.end(template);
         })
@@ -143,7 +150,23 @@ var app = http.createServer(function (request, response) {//요청할 때, 응�
       });
 
     });//더이상 들어올 정보가 없으면 이 callback함수를 호출한다. 정보 수신 끝 !
-  }else {
+  }else if(pathname==='/delete_process'){
+    var body = '';
+    request.on('data', function (data) {
+      body += data;//data를 매번 추가해준다.
+    });//post방식으로 전송할 때 데이터가 많으면 컴퓨터에 무리가 갈 수 있음, nodejs에서는 데이터가 많은 경우에 이와 같은 방법을 사용한다
+    //데이터를 수신할 때 마다 callback함수를 호출하기로 약속. data라는 매개변수로 그 정보를 받아옴
+    request.on('end', function () {
+      var post = qs.parse(body);//데이터를 객체화하여 가져온다. 지금까지의 body가 저장되어있을 것이다.
+      var id=post.id;
+      fs.unlink(`data/${id}`, function(err){
+        response.writeHead(302, {Location:`/`});//리다이렉션
+          response.end();
+      })
+
+    });//더이상 들어올 정보가 없으면 이 callback함수를 호출한다. 정보 수신 끝 !
+  }
+  else {
     response.writeHead(404);
     response.end('not FOund');
   }

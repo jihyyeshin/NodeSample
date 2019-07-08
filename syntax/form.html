@@ -1,0 +1,16 @@
+<!--데이터를 가지고 있는 것들을 form으로 묶는다. action string이 가리키는 서버로 query string을 보낸다.-->
+<!--
+    데이터를 가져올 때는 url에 정보가 있어도 상관없다.
+    하지만, 데이터를 수정, 삭제, 생성할 때는 url에 정보가 있으면 안된다. 무심코 어떤 사람이 그 주소를 입력했을 떄 영향이 있으면 안됨!
+    따라서 가져올 때는 get, 나머지는 post를 쓴다.
+    post를 쓰면 query string이 url으로 들어오지 않음
+-->
+<form action="http://localhost:3000/process_create" method="post">
+<p><input type="text" name="title"></p>
+<p>
+    <textarea name="description"></textarea>
+</p>
+<p>
+    <input type="submit">
+</p>
+</form>

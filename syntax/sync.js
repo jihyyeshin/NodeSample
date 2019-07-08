@@ -8,9 +8,6 @@ node.js 는 비동기 처리를 위한 좋은 기능들을 가지고 있음.
 * 코드레벨에서의 동기, 비동기
 method name 뒤에 sync가 붙어져있음
 sync가 붙어져있지 않는 것은 callback함수가 있다.
-
-
-
 */
 
 var fs=require('fs');
